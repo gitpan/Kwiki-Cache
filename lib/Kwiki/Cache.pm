@@ -1,25 +1,26 @@
 package Kwiki::Cache;
-use strict;
-use warnings;
-use Kwiki::Plugin '-Base';
+use Kwiki::Plugin -Base;
 use Digest::MD5;
-our $VERSION = '0.10';
+our $VERSION = '0.11';
 
 const class_id => 'cache';
+const class_title => 'Generic Cache';
 
 sub process {
     my $closure = shift;
     my $cache_name = Digest::MD5::md5_hex(join '!@#$', @_);
     my $path = $self->plugin_directory;
     my $io = io->catfile($path, $cache_name)->assert;
-    unless (-f "$io") {
-        &$closure > $io;
+    unless ($io->exists) {
+        $io->lock->mode('>>')->open;
+        if ($io->empty) {
+            $io->print(&$closure);
+        }
         $io->close;
     }
     $io->scalar;
 }
 
-1;
 __DATA__
 
 =head1 NAME 
